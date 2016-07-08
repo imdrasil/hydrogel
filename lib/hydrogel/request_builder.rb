@@ -132,10 +132,10 @@ module Hydrogel
       if var.size > 1 || var.first[:operator] && var.first[:operator] != default_operator(types)
         add_default_operator(var, types)
         if types.include?(:bool)
-          { bool: build_matcher_hash(:bool, var) }
-        else
-          build_matcher_hash(:root, var)
+          result = build_matcher_hash(:bool, var)
+          return { bool: result } unless result.empty?
         end
+        build_matcher_hash(:root, var)
       else
         reject_operator(matchers_conversions(var).first)
       end

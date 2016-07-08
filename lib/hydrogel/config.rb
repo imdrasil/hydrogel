@@ -5,12 +5,16 @@ module Hydrogel
         port: 9200,
         per_page: 10,
         many_size: 1_000,
-        default_operator: :must
+        client: nil
     }.freeze
 
     class << self
-      attr_accessor :host, :port, :per_page, :many_size
+      attr_accessor :host, :port, :per_page, :many_size, :client
       attr_reader :base_url
+
+      def config
+        yield self
+      end
 
       def reset
         DEFAULTS.each { |attr, value| instance_variable_set("@#{attr}", value) }

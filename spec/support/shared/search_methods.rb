@@ -11,6 +11,10 @@ RSpec.shared_examples 'common searchable' do |klass|
         end
       end
 
+      it 'correctly works with several operators' do
+        expect(klass.filter(term: { genre: 0 }, terms: { genre: [1] }, _op: :or).count).to eq(2)
+      end
+
       describe '#h_search' do
         let(:response) do
           klass.superclass == ActiveRecord::Base ? Elasticsearch::Model::Response::Result : klass

@@ -8,7 +8,7 @@ class Track
   document_type 'track'
 
   attribute :title, String
-  attribute :genre, String
+  attribute :genre, Integer
   attribute :song_uri, String
   attribute :item_number, Integer
 end

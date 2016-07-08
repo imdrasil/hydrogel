@@ -18,8 +18,8 @@ class Migration
       migrate
       create_indexes
       3.times do |i|
-        Track.create(title: "Track #{i}")
-        Article.create(title: "Article #{i}")
+        Track.create(title: "Track #{i}", genre: i)
+        Article.create(title: "Article #{i}", genre: i)
       end
       Article.import
       sleep 1
@@ -50,7 +50,7 @@ class Migration
     def create_article(schema)
       schema.create_table(:articles) do |t|
         t.string :title
-        t.string :genre
+        t.integer :genre, default: 0
         t.text :text
       end
     end

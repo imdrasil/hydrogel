@@ -15,6 +15,8 @@ module Hydrogel
 
     def initialize(klass, options = {})
       @klass = klass
+      @index = klass.index_name
+      @type = klass.document_type
       @size = nil
       ATTRS.each { |arg| instance_variable_set("@#{arg}", []) }
       @facets = {}
@@ -46,7 +48,7 @@ module Hydrogel
     end
 
     def result(options = {})
-      @result ||= @klass.h_search(*RequestBuilder.new(self).build(options))
+      @result = @klass.h_search(*RequestBuilder.new(self).build(options))
     end
 
     # =============  global
@@ -56,6 +58,7 @@ module Hydrogel
     end
 
     def query(args)
+      @query = [] if has_match_all?
       @query += prepare_arguments(args)
       self
     end
@@ -107,22 +110,32 @@ module Hydrogel
     end
     # ==================
 
+    def count
+      @size = 0
+      pure_request['hits']['total']
+    end
+
     def many
       @size = Config.many_size
       self
     end
 
-    def pluck(*args)
-      fields(*args)
-      result(extract: :fields)
+    def match_all
+      @query = prepare_arguments(match_all: {})
+      self
     end
 
-    def index(value)
+    def pluck(*args)
+      fields(*args)
+      pure_request(extract: :fields)
+    end
+
+    def index(*value)
       @index = value
       self
     end
 
-    def type(value)
+    def type(*value)
       @type = value
       self
     end
@@ -178,6 +191,10 @@ module Hydrogel
 
     private
 
+    def has_match_all?
+      @query[0] && @query[0][:match_all]
+    end
+
     def add_scopes(options)
       (Query.scopes[@klass] || {}).each { |name, body| define_singleton_method(name, body) }
       self.instance_exec(&Query.default_scopes[@klass]) if !options[:unscoped] && Query.default_scopes[@klass]
@@ -212,6 +229,10 @@ module Hydrogel
 
     def to_array_hash(hash)
       hash.map { |k, v| { k => v } }
+    end
+
+    def pure_request(options = {})
+      ::Hydrogel.h_search(*RequestBuilder.new(self).build(options.merge(index: @index, type: @type)))
     end
   end
 end

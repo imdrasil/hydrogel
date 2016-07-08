@@ -17,10 +17,15 @@ module Hydrogel
     extract_result(res, options[:extract])
   end
 
+  def index_name; end
+  def document_type; end
+
   private
 
   def client
-    @client ||= if defined?(Elasticsearch::Model) && Elasticsearch::Model.client
+    @client ||= if Config.client
+                  Config.client
+                elsif defined?(Elasticsearch::Model) && Elasticsearch::Model.client
                   Elasticsearch::Model.client
                 else
                   Elasticsearch::Persistence.client
@@ -40,5 +45,7 @@ module Hydrogel
     end
   end
 
-  (BasicMethods::ALL_METHODS + [:h_search, :client, :extract_result]).each { |method| module_function method }
+  (BasicMethods::ALL_METHODS + [:h_search, :client, :extract_result, :index_name, :document_type]).each do |method|
+    module_function method
+  end
 end

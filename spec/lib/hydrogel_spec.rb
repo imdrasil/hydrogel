@@ -13,6 +13,12 @@ RSpec.describe Hydrogel do
     end
   end
 
+  context 'searching' do
+    it 'searches via multiple types' do
+      expect(Hydrogel.match_all.type('article', 'track').count).to eq(6)
+    end
+  end
+
   describe '#extract_result' do
     let(:query) { { query: { match_all: {} } } }
 

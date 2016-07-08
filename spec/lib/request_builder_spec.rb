@@ -63,7 +63,7 @@ RSpec.describe Hydrogel::RequestBuilder do
 
     it 'added index to attributes if it was given' do
       request.index(index)
-      expect(subject[:index]).to eq(index)
+      expect(subject[:index]).to eq([index])
     end
   end
 
