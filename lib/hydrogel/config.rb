@@ -9,13 +9,12 @@ module Hydrogel
     }.freeze
 
     class << self
-      attr_accessor :host, :port, :per_page
+      attr_accessor :host, :port, :per_page, :many_size
       attr_reader :base_url
 
       def reset
-        DEFAULTS.each do |attr, value|
-          instance_variable_set("@#{attr}", value)
-        end
+        DEFAULTS.each { |attr, value| instance_variable_set("@#{attr}", value) }
+        reset_base_url
       end
 
       def host=(value)

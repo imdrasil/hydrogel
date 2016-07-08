@@ -1,33 +1,30 @@
-require 'elasticsearch/model'
-require 'elasticsearch/persistence/model'
-
 require "hydrogel/version"
 require 'hydrogel/config'
 require 'hydrogel/basic_methods'
 
 require 'hydrogel/curl'
-require 'hydrogel/hook'
 require 'hydrogel/request_builder'
 require 'hydrogel/query'
 require 'hydrogel/model'
-require 'hydrogel/persistence'
 
 module Hydrogel
-  include BasicMethods
+  extend BasicMethods
 
   def h_search(query, options = {})
     hash = { body: query.reverse_merge(pagination_hash(options)) }
     hash.merge!(options.slice(:index, :type))
-    res = client.h_search(hash)
+    res = client.search(hash)
     extract_result(res, options[:extract])
   end
-
-  (BasicMethods::METHODS + [:h_search]).each { |method| module_function method }
 
   private
 
   def client
-    Elasticsearch::Persistence.client
+    @client ||= if defined?(Elasticsearch::Model) && Elasticsearch::Model.client
+                  Elasticsearch::Model.client
+                else
+                  Elasticsearch::Persistence.client
+                end
   end
 
   def extract_result(response, type)
@@ -42,4 +39,6 @@ module Hydrogel
         response
     end
   end
+
+  (BasicMethods::ALL_METHODS + [:h_search, :client, :extract_result]).each { |method| module_function method }
 end

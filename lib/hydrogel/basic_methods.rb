@@ -1,19 +1,20 @@
 module Hydrogel
   module BasicMethods
     PAGINATION_OPTIONS = [:page, :per, :per_page]
-    METHODS = [:filter, :query, :function_score]
+    ONE_ARG_METHODS = [:query, :filter, :size, :from, :filtered, :fields, :no_fields, :facets, :index, :type,
+                       :aggs, :pluck, :sort_by, :order]
+    TWO_ARGS_METHODS = [:terms, :term, :ids, :match, :function_score]
+    NO_ARG_METHODS = [:many]
+    ALL_METHODS = ONE_ARG_METHODS + TWO_ARGS_METHODS + NO_ARG_METHODS + [:multi_match]
 
-    def filter(filters, options = {})
-      h_search({ filter: filters }, options)
-    end
-
-    def query(query, options = {})
-      search({ query: query }, options)
-    end
-
-    def function_score(query, functions, options = {})
-      query[:query] = function_score_hash(functions, query)
-      search(query, options)
+    def self.extended(klass)
+      klass.instance_eval do
+        ALL_METHODS.each do |method|
+          define_method(method) do |*args|
+            ::Hydrogel::Query.new(self).send(method, *args)
+          end
+        end
+      end
     end
 
     private
@@ -23,10 +24,6 @@ module Hydrogel
       page = (options.delete(:page) || 1).to_i
       per_page = (options.delete(:per_page) || options.delete(:per) || Config.per_page).to_i
       { from: (page - 1) * per_page, size: per_page }
-    end
-
-    def function_score_hash(functions, options)
-      { function_score: functions.merge(options.slice(:query)) }
     end
   end
 end

@@ -1,3 +1,5 @@
+require 'httparty'
+
 module Hydrogel
   class Curl
     class << self

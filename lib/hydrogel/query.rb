@@ -2,23 +2,43 @@ module Hydrogel
   class Query
     include Enumerable
 
-    ATTRS = [:filter, :filtered, :query, :fields, :sort, :functions]
+    ATTRS = [:filter, :filtered, :query, :fields, :sort, :functions].freeze
     ANOTHER_ATTRS = [:size, :facets, :aggs, :no_fields, :index, :type, :multi_match, :functions, :score_mode, :page,
-                     :per_page, :from, :size, :klass]
-    BOOL_OPS = [:must, :should, :must_not]
-    ROOT_OPS = [:and, :or, :not]
+                     :per_page, :from, :size, :klass].freeze
+
+    BOOL_OPS = [:must, :should, :must_not].freeze
+    ROOT_OPS = [:and, :or, :not].freeze
     ALL_OPS = BOOL_OPS + ROOT_OPS
     OP = :_op
 
     ATTRS.each { |attr| attr_reader attr }
 
-    def initialize(klass)
+    def initialize(klass, options = {})
       @klass = klass
       @size = nil
       ATTRS.each { |arg| instance_variable_set("@#{arg}", []) }
       @facets = {}
       @aggs = {}
       @no_fields = false
+      add_scopes(options)
+    end
+
+    class << self
+      def add_scope(klass, name, scope)
+        (scopes[klass] ||= {})[name.to_sym] = scope
+      end
+
+      def add_default_scope(klass, scope)
+        default_scopes[klass] = scope
+      end
+
+      def scopes
+        @scopes ||= {}
+      end
+
+      def default_scopes
+        scopes[:default] ||= {}
+      end
     end
 
     def each(&block)
@@ -156,6 +176,11 @@ module Hydrogel
     end
 
     private
+
+    def add_scopes(options)
+      (Query.scopes[@klass] || {}).each { |name, body| define_singleton_method(name, body) }
+      self.instance_exec(&Query.default_scopes[@klass]) if !options[:unscoped] && Query.default_scopes[@klass]
+    end
 
     def operator(hash)
       hash[Hydrogel::Query::OP]

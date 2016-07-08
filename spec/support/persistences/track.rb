@@ -2,7 +2,7 @@ require 'elasticsearch/persistence/model'
 
 class Track
   include Elasticsearch::Persistence::Model
-  include Hydrogel::Persistence
+  extend Hydrogel::Model
 
   index_name 'test_index'
   document_type 'track'

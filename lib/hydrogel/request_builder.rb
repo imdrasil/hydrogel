@@ -82,7 +82,7 @@ module Hydrogel
         hash[:size] = size if size
         hash[:from] = from if from
       elsif page
-        hash[:size] = per_page || klass.default_page_size || Config.per_page
+        hash[:size] = per_page || Config.per_page
         hash[:from] = page * hash[:size]
       end
     end
