@@ -17,9 +17,6 @@ RSpec.shared_examples 'common searchable' do |klass|
         end
 
         it 'returns normal object' do
-          #binding.pry
-          puts '--'
-          puts klass.h_search(query: { match_all: {} }).to_a.inspect
           expect(klass.h_search(query: { match: { title: '1' } }).first).to be_a(response)
         end
       end

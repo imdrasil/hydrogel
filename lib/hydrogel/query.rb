@@ -45,8 +45,8 @@ module Hydrogel
       result.each { |record| block.call(record) }
     end
 
-    def result
-      @result ||= @klass.h_search(*RequestBuilder.new(self).build)
+    def result(options = {})
+      @result ||= @klass.h_search(*RequestBuilder.new(self).build(options))
     end
 
     # =============  global
@@ -99,11 +99,12 @@ module Hydrogel
       end
     end
 
-    def match(location = :query, args)
-      add_argument_by_method(args, :match, location)
-      self
+    [:match, :common, :prefix, :wildcard, :regexp, :fuzzy].each do |shortcut|
+      define_method(shortcut) do |location = :query, args|
+        add_argument_by_method(args, shortcut, location)
+        self
+      end
     end
-
     # ==================
 
     def many
@@ -113,7 +114,7 @@ module Hydrogel
 
     def pluck(*args)
       fields(*args)
-      result.response['hits']['hits'].map { |e| e['fields'] }
+      result(extract: :fields)
     end
 
     def index(value)

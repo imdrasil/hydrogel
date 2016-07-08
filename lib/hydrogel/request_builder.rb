@@ -2,6 +2,9 @@ require 'hydrogel/query'
 
 module Hydrogel
   class RequestBuilder
+    def initialize(query)
+      @query = query
+    end
 
     (Query::ATTRS + Query::ANOTHER_ATTRS).each do |var|
       define_method(var) do
@@ -9,21 +12,16 @@ module Hydrogel
       end
     end
 
-    def initialize(query)
-      @query = query
-    end
-
-    def build
-      [build_hash, additional_get_attrs]
+    def build(options = {})
+      [build_hash, additional_get_attrs(options)]
     end
 
     private
 
-    def additional_get_attrs
-      attrs = {}
-      attrs[:index] = index if index
-      attrs[:type] = type if type
-      attrs
+    def additional_get_attrs(options)
+      options[:index] = index if index
+      options[:type] = type if type
+      options
     end
 
     def build_hash
@@ -89,19 +87,35 @@ module Hydrogel
 
     def build_matcher_hash(type, var)
       filter = {}
-      ops = case type
-              when :root
-                Query::ROOT_OPS
-              when :bool
-                Query::BOOL_OPS
-              else
-                []
-            end
-      ops.each do |operator|
-        values = var.select { |e| e[:operator] == operator }.map { |e| e.reject { |k, _| k == :operator } }
-        filter[operator] =  values unless values.empty?
+      operators_by_type(type).each do |operator|
+        values = var.select { |e| e[:operator] == operator }.map { |e| reject_operator(e) }
+        next if values.empty?
+        matchers_conversions(values)
+        filter[operator] = values
       end
       filter
+    end
+
+    def matchers_conversions(matchers)
+      parse_common(matchers)
+      matchers
+    end
+
+    def parse_common(array)
+      array.select { |hash| hash[:common] }.each do |hash|
+        hash[:common] = { body: hash[:common] } unless hash[:common][:body]
+      end
+    end
+
+    def operators_by_type(type)
+      case type
+      when :root
+        Query::ROOT_OPS
+      when :bool
+        Query::BOOL_OPS
+      else
+        []
+      end
     end
 
     def add_query_part_to_hash(query, hash)
@@ -115,23 +129,33 @@ module Hydrogel
 
     def build_matchers_hash(var, types = [:root, :bool])
       types = [types] unless types.is_a?(Array)
-      add_default_operator(var, types) if var.size > 1 && var.all? { |e| e[:operator].nil? }
-      if types.include?(:bool) && var.index { |e| Query::BOOL_OPS.include? e[:operator] }
-        { bool: build_matcher_hash(:bool, var) }
-      elsif types.include?(:root) && var.index { |e| Query::ROOT_OPS.include?(e[:operator]) }
-        build_matcher_hash(:root, var)
+      if var.size > 1 || var.first[:operator] && var.first[:operator] != default_operator(types)
+        add_default_operator(var, types)
+        if types.include?(:bool)
+          { bool: build_matcher_hash(:bool, var) }
+        else
+          build_matcher_hash(:root, var)
+        end
       else
-        var.first.reject { |k, _| k == :operator }
+        reject_operator(matchers_conversions(var).first)
       end
     end
 
     def add_default_operator(var, types)
-      operator = if (types - [:root, :bool]).empty? || types == [:bool]
-                   :must
-                 elsif types == [:root]
-                   :and
-                 end
-      var.each { |e| e[:operator] = operator }
+      operator = default_operator(types)
+      var.each { |e| e[:operator] = operator unless e[:operator] }
+    end
+
+    def default_operator(types)
+      if (types - [:root, :bool]).empty? || types == [:bool]
+        :must
+      elsif types == [:root]
+        :and
+      end
+    end
+
+    def reject_operator(hash)
+      hash.reject { |k, _| k == :operator }
     end
 
     def initialize_query

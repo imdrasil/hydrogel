@@ -13,7 +13,7 @@ RSpec.describe Hydrogel do
     end
   end
 
-  describe '#extract_result', focus: true do
+  describe '#extract_result' do
     let(:query) { { query: { match_all: {} } } }
 
     it 'extract only hits if hits params was given' do

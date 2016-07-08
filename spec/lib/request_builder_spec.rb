@@ -57,7 +57,7 @@ RSpec.describe Hydrogel::RequestBuilder do
   end
 
   describe '#additional_get_attrs' do
-    subject { builder.send(:additional_get_attrs) }
+    subject { builder.send(:additional_get_attrs, {}) }
 
     let(:index) { 'some_index' }
 
